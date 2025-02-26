@@ -1,33 +1,55 @@
-"use server";
+'use server'
 
-import webpush from "web-push";
-
-const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!;
-const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY!;
+import webpush from 'web-push'
 
 webpush.setVapidDetails(
-    "mailto:seuemail@exemplo.com",
-    VAPID_PUBLIC_KEY,
-    VAPID_PRIVATE_KEY
-);
+    'mailto:your-email@example.com',
+    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
+    process.env.VAPID_PRIVATE_KEY!
+)
 
-// Simula um banco de dados para armazenar inscrições de usuários
-const subscriptions: PushSubscription[] = [];
+let subscription: webpush.PushSubscription | null = null
 
-export async function subscribeUser(subscription: PushSubscription) {
-    subscriptions.push(subscription);
-    console.log("Usuário inscrito:", subscription);
+export async function subscribeUser(sub: PushSubscription) {
+    const subJson = sub.toJSON(); // Converte o objeto para JSON
+
+    if (!subJson.keys) {
+        throw new Error('Subscription keys are missing')
+    }
+
+    subscription = {
+        endpoint: sub.endpoint,
+        keys: {
+            p256dh: subJson.keys.p256dh!,
+            auth: subJson.keys.auth!
+        }
+    } as webpush.PushSubscription; // Força a tipagem correta para web-push
+
+    return { success: true }
 }
 
 export async function unsubscribeUser() {
-    console.log("Usuário desinscrito");
+    subscription = null
+    return { success: true }
 }
 
 export async function sendNotification(message: string) {
-    for (const sub of subscriptions) {
+    if (!subscription) {
+        throw new Error('No subscription available')
+    }
+
+    try {
         await webpush.sendNotification(
-            sub,
-            JSON.stringify({ title: "Nova Notificação", body: message })
-        );
+            subscription,
+            JSON.stringify({
+                title: 'Test Notification',
+                body: message,
+                icon: '/icon.png',
+            })
+        )
+        return { success: true }
+    } catch (error) {
+        console.error('Error sending push notification:', error)
+        return { success: false, error: 'Failed to send notification' }
     }
 }
