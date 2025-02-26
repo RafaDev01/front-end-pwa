@@ -21,31 +21,32 @@ function InstallPrompt() {
 
         const handleBeforeInstallPrompt = (event: Event) => {
             event.preventDefault();
+            console.log("✅ beforeinstallprompt disparado!"); // Debugging
             setDeferredPrompt(event as BeforeInstallPromptEvent);
         };
 
         window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-
         return () => {
             window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
         };
     }, []);
 
     if (isStandalone) {
-        return null; // Não exibir o botão se o app já estiver instalado
+        console.log("⏩ App já está instalado, não exibe o botão.");
+        return null;
     }
 
     const handleInstallClick = async () => {
-        if (!deferredPrompt) return;
+        if (!deferredPrompt) {
+            console.log("❌ Nenhum prompt de instalação disponível.");
+            return;
+        }
 
+        console.log("📢 Exibindo prompt de instalação...");
         await deferredPrompt.prompt();
         const { outcome } = await deferredPrompt.userChoice;
 
-        if (outcome === "accepted") {
-            console.log("Usuário aceitou a instalação.");
-        } else {
-            console.log("Usuário recusou a instalação.");
-        }
+        console.log(`🔹 Usuário escolheu: ${outcome}`);
 
         setDeferredPrompt(null);
     };
@@ -58,7 +59,7 @@ function InstallPrompt() {
             )}
             {isIOS && (
                 <p>
-                    Para instalar este app no seu dispositivo iOS, toque no botão de compartilhamento
+                    Para instalar este app no seu iPhone, toque no botão de compartilhamento
                     <span role="img" aria-label="ícone de compartilhamento"> ⎋ </span>
                     e depois em &quot;Adicionar à Tela Inicial&quot;
                     <span role="img" aria-label="ícone de adicionar"> ➕ </span>.
